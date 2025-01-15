@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Album</title>
+    <title>View Albums</title>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        /* Resetting margins and padding */
         * {
             margin: 0;
             padding: 0;
@@ -25,8 +24,8 @@
             color: #fff;
         }
 
-        /* Navbar Styling */
-        .navbar {
+         /* Navbar Styling */
+         .navbar {
             width: 100%;
             background-color: rgba(0, 0, 0, 0.7);
             padding: 15px 0;
@@ -62,15 +61,12 @@
             background-color: #ff9a8b;
         }
 
-        /* Main Form Styling */
         .container {
+            margin-top: 100px;
             background-color: #222;
             padding: 40px;
             border-radius: 15px;
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
-            width: 100%;
-            max-width: 650px;
-            margin-top: 100px; /* Prevent overlap with navbar */
         }
 
         h1 {
@@ -81,48 +77,54 @@
             font-weight: bold;
         }
 
-        label {
-            font-weight: 600;
-            color: #fff;
-            margin-bottom: 8px;
-            display: block;
-        }
-
-        input[type="text"],
-        input[type="file"] {
+        table {
             width: 100%;
-            padding: 15px;
+            border-collapse: collapse;
             margin-bottom: 20px;
-            border-radius: 8px;
-            border: 1px solid #ddd;
-            font-size: 16px;
-            transition: border-color 0.3s ease;
         }
 
-        input[type="text"]:focus,
-        input[type="file"]:focus {
-            border-color: #ff9a8b;
-            outline: none;
-        }
-
-        button {
-            background-color: #ff9a8b;
+        table th, table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
             color: #fff;
-            padding: 16px;
-            font-size: 18px;
-            border: none;
-            border-radius: 8px;
-            width: 100%;
-            cursor: pointer;
+        }
+
+        table th {
+            background-color: #333;
+        }
+
+        table tr:hover {
+            background-color: rgba(255, 154, 139, 0.3);
+        }
+
+        .action-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 5px;
+            margin-right: 5px;
             transition: background-color 0.3s ease;
         }
 
-        button:hover {
-            background-color: #f06;
+        .edit-btn {
+            background-color: #4CAF50;
+        }
+
+        .edit-btn:hover {
+            background-color: #45a049;
+        }
+
+        .delete-btn {
+            background-color: #f44336;
+        }
+
+        .delete-btn:hover {
+            background-color: #e53935;
         }
 
         .message {
-            margin-top: 20px;
             text-align: center;
             font-weight: bold;
         }
@@ -133,30 +135,6 @@
 
         .message.error {
             color: #f44336;
-        }
-
-        /* Responsive design */
-        @media (max-width: 600px) {
-            .navbar ul {
-                flex-direction: column;
-                align-items: center;
-            }
-
-            .container {
-                padding: 25px;
-            }
-
-            h1 {
-                font-size: 28px;
-            }
-
-            button {
-                font-size: 16px;
-            }
-
-            .navbar ul li {
-                margin: 10px 0;
-            }
         }
     </style>
 </head>
@@ -173,33 +151,51 @@
         </ul>
     </div>
 
-    <!-- Form for adding album -->
+    <!-- Container -->
     <div class="container">
-        <h1>Add Album</h1>
-        <form method="POST" enctype="multipart/form-data">
-            <label for="name">Album Name:</label>
-            <input type="text" name="name" required>
-
-            <label for="image">Album Image:</label>
-            <input type="file" name="image" required>
-
-            <button type="submit" name="submit">Add Album</button>
-        </form>
+        <h1>View Albums</h1>
 
         <?php
-        if (isset($_POST['submit'])) {
-            $name = $_POST['name'];
-            $image = $_FILES['image']['name'];
-            $target = "../uploads/albums/" . basename($image);
+        if (isset($_GET['delete'])) {
+            $id = $_GET['delete'];
+            $stmt = $conn->prepare("DELETE FROM albums WHERE id = :id");
+            $stmt->execute(['id' => $id]);
+            echo "<p class='message success'>Album deleted successfully!</p>";
+        }
 
-            if (move_uploaded_file($_FILES['image']['tmp_name'], $target)) {
-                $sql = "INSERT INTO albums (name, image) VALUES (:name, :image)";
-                $stmt = $conn->prepare($sql);
-                $stmt->execute(['name' => $name, 'image' => $image]);
-                echo "<p class='message success'>Album added successfully!</p>";
-            } else {
-                echo "<p class='message error'>Failed to upload image.</p>";
+        $sql = "SELECT * FROM albums";
+        $stmt = $conn->prepare($sql);
+        $stmt->execute();
+        $albums = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        if (count($albums) > 0) {
+            echo "<table>
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Image</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>";
+
+            foreach ($albums as $album) {
+                echo "<tr>
+                        <td>{$album['id']}</td>
+                        <td>{$album['name']}</td>
+                        <td><img src='../uploads/albums/{$album['image']}' alt='{$album['name']}' width='80'></td>
+                        <td>
+                            <a href='edit_album.php?id={$album['id']}' class='action-btn edit-btn'>Edit</a>
+                            <a href='view_album.php?delete={$album['id']}' class='action-btn delete-btn' onclick='return confirm(\"Apakah anda yakin ingin menghapus album?\");'>Delete</a>
+                        </td>
+                    </tr>";
             }
+
+            echo "</tbody>
+                </table>";
+        } else {
+            echo "<p class='message error'>No albums found.</p>";
         }
         ?>
     </div>

@@ -1,33 +1,34 @@
 <?php 
 include '../includes/db.php';
 
-// Fetch album details based on album ID from the URL
+// Ambil detail album berdasarkan ID album dari URL
 $album_id = isset($_GET['id']) ? $_GET['id'] : 0;
 if ($album_id == 0) {
-    echo "Invalid album ID.";
+    echo "ID album tidak valid.";
     exit;
 }
 
-// Fetch the album details
+// Ambil detail album
 $album_query = $conn->prepare("SELECT * FROM albums WHERE id = :album_id LIMIT 1");
 $album_query->execute(['album_id' => $album_id]);
 $album = $album_query->fetch();
 
-// Fetch the songs in the album
+// Ambil lagu-lagu dalam album
 $songs_query = $conn->prepare("SELECT * FROM songs WHERE album_id = :album_id");
 $songs_query->execute(['album_id' => $album_id]);
 $songs = $songs_query->fetchAll();
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?php echo htmlspecialchars($album['name']); ?> - Album</title>
     <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@400;700&family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
-        /* Basic Reset */
+        /* Reset Dasar */
         * {
             margin: 0;
             padding: 0;
@@ -36,7 +37,7 @@ $songs = $songs_query->fetchAll();
 
         body {
             font-family: 'Montserrat', sans-serif;
-            background: linear-gradient(135deg, #0a0a0a, #1c1c1c);
+            background: #121212; /* Latar belakang gelap */
             color: #fff;
             line-height: 1.6;
             padding: 20px;
@@ -48,6 +49,7 @@ $songs = $songs_query->fetchAll();
             color: #FF4081;
             margin-bottom: 30px;
             text-transform: uppercase;
+            font-weight: bold;
         }
 
         /* Navbar */
@@ -55,16 +57,28 @@ $songs = $songs_query->fetchAll();
             display: flex;
             justify-content: space-between;
             padding: 20px;
-            background-color: #111;
+            background-color: #1a1a1a;
             border-radius: 8px;
             margin-bottom: 30px;
             box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            position: sticky;
+            top: 0;
+            z-index: 1000;
         }
 
+        /* Gaya Logo Navbar */
         .navbar .logo {
             font-size: 24px;
             font-weight: 700;
             color: #FF4081;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar .logo .logo-img {
+            width: 40px; /* Sesuaikan ukuran logo */
+            height: 40px;
+            margin-right: 10px; /* Ruang antara logo dan teks */
         }
 
         .navbar a {
@@ -80,7 +94,7 @@ $songs = $songs_query->fetchAll();
             background-color: #333;
         }
 
-        /* Album Details */
+        /* Detail Album */
         .album-detail {
             text-align: center;
             margin-bottom: 40px;
@@ -92,6 +106,12 @@ $songs = $songs_query->fetchAll();
             object-fit: cover;
             border-radius: 15px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .album-detail img:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
         }
 
         .album-detail h2 {
@@ -101,58 +121,74 @@ $songs = $songs_query->fetchAll();
             font-weight: bold;
         }
 
-        /* Songs List */
+        /* Daftar Lagu */
         .songs-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 30px;
-            justify-items: center;
-            padding: 0 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
         }
 
         .song {
-            background-color: #333;
-            border-radius: 15px;
-            overflow: hidden;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
-            text-align: center;
-            padding: 20px;
-            width: 100%;
             display: flex;
-            flex-direction: column;
             align-items: center;
+            background-color: #2c2c2c;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+            width: 100%;
+            justify-content: space-between;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-
-        .song h3 {
-            margin: 15px 0;
-            font-size: 20px;
-            color: #fff;
-            font-weight: 600;
-            text-transform: capitalize;
-        }
-
-        .song a {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #FF4081;
-            color: white;
-            text-decoration: none;
-            border-radius: 25px;
-            font-size: 16px;
-            transition: background-color 0.3s ease;
-        }
-
-        .song a:hover {
-            background-color: #e4407d;
+            cursor: pointer;
         }
 
         .song:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+            transform: translateX(10px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
         }
 
-        /* Audio Player */
+        .song .song-info {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .song .number {
+            font-size: 18px;
+            color: #FF4081;
+        }
+
+        .song img {
+            width: 60px;
+            height: 60px;
+            object-fit: cover;
+            border-radius: 10px;
+            border: 2px solid #FF4081;
+        }
+
+        .song .song-name {
+            font-size: 22px;
+            color: #fff;
+            font-weight: 600;
+        }
+
+        .song .controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .song .controls i {
+            font-size: 22px;
+            color: #FF4081;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .song .controls i:hover {
+            color: #e4407d;
+        }
+
+        /* Pemutar Audio */
         .audio-player {
             margin-top: 10px;
             display: flex;
@@ -168,7 +204,14 @@ $songs = $songs_query->fetchAll();
             color: #fff;
         }
 
-        /* Frequency Visualizer Canvas */
+        .play-pause-btn {
+            font-size: 30px;
+            color: #FF4081;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+
+        /* Visualisasi Frekuensi */
         #frequencyVisualizer {
             margin-top: 10px;
             width: 100%;
@@ -176,7 +219,7 @@ $songs = $songs_query->fetchAll();
             background-color: #111;
         }
 
-        /* Logout Button */
+        /* Tombol Logout */
         .logout-btn {
             display: block;
             width: 250px;
@@ -195,113 +238,116 @@ $songs = $songs_query->fetchAll();
         .logout-btn:hover {
             background-color: #e53935;
         }
+
+        .like-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .like-btn {
+            background-color: #FF4081;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+
+        .like-btn:hover {
+            background-color: #e5397d;
+        }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
-    <div class="navbar">
-        <div class="logo">Music Player</div>
-        <div>
-            <a href="./index.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>">Home</a>
-            <a href="./albums.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'albums.php') ? 'active' : ''; ?>">Albums</a>
-            <a href="./artists.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'artists.php') ? 'active' : ''; ?>">Artists</a>
-            <a href="../logout.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">Logout</a>
-        </div>
+<div class="navbar">
+    <div class="logo">
+        <img src="../assets/images/logo.png" alt="Logo Musik" class="logo-img">
+        Pemutar Musik
     </div>
-
-    <h1><?php echo htmlspecialchars($album['name']); ?> - Album</h1>
-
-    <!-- Album Details -->
-    <div class="album-detail">
-        <img src="../uploads/albums/<?php echo htmlspecialchars($album['image']); ?>" alt="<?php echo htmlspecialchars($album['name']); ?>">
-        <h2><?php echo htmlspecialchars($album['name']); ?></h2>
+    <div>
+        <a href="./index.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'index.php') ? 'active' : ''; ?>">Beranda</a>
+        <a href="./albums.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'albums.php') ? 'active' : ''; ?>">Album</a>
+        <a href="./artists.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'artists.php') ? 'active' : ''; ?>">Artis</a>
+        <a href="../logout.php" class="<?php echo (basename($_SERVER['PHP_SELF']) == 'logout.php') ? 'active' : ''; ?>">Keluar</a>
     </div>
+</div>
 
-    <!-- Songs List -->
-    <div class="songs-list">
-        <?php
-        if (count($songs) > 0) {
-            foreach ($songs as $song) {
-                // Use null coalescing operator for safe access
-                $song_name = $song['title'] ?? 'Unknown Song';
-                $song_file = $song['file_path'] ?? '#'; // Fallback to '#' if no file
+<h1><?php echo htmlspecialchars($album['name']); ?> - Album</h1>
 
-                echo "
-                <div class='song'>
-                    <h3>{$song_name}</h3>
-                    <div class='audio-player'>
-                        <audio controls>
-                            <source src='../uploads/songs/{$song_file}' type='audio/mpeg'>
-                            Your browser does not support the audio element.
-                        </audio>
-                    </div>
-                    <canvas id='frequencyVisualizer'></canvas>
-                    <a href='../uploads/songs/{$song_file}' download>Download</a>
-                </div>";
-            }
-        } else {
-            echo "<p>No songs available in this album.</p>";
+<div class="album-detail">
+    <img src="../uploads/albums/<?php echo htmlspecialchars($album['image']); ?>" alt="<?php echo htmlspecialchars($album['name']); ?>">
+    <div class="like-container">
+        <button id="like-btn" class="like-btn">
+            ❤️ <span id="like-count"><?php echo $album['likes']; ?></span>
+        </button>
+    </div>
+</div>
+
+<div class="songs-list">
+    <?php
+    if (count($songs) > 0) {
+        $counter = 1;
+        foreach ($songs as $song) {
+            $song_name = $song['title'] ?? 'Lagu Tidak Dikenal';
+            $song_file = $song['file_path'] ?? '#'; 
+
+            echo "
+            <div class='song'>
+                <div class='song-info'>
+                    <div class='number'>{$counter}</div>
+                    <img src='../uploads/images/{$song['image_path']}' alt='{$song_name}'>
+                    <div class='song-name'>{$song_name}</div>
+                </div>
+                <div class='controls'>
+                    <i class='play-pause-btn' id='playPause{$song['id']}'>▶️</i>
+                </div>
+                <audio id='audio{$song['id']}' src='../uploads/songs/{$song_file}' preload='none'></audio>
+            </div>";
+            $counter++;
         }
-        ?>
-    </div>
+    } else {
+        echo "<p>Tidak ada lagu dalam album ini.</p>";
+    }
+    ?>
+</div>
 
-    <!-- Logout Button -->
-    <a href="../logout.php" class="logout-btn">Logout</a>
+<script>
+    window.onload = function() {
+        const playPauseButtons = document.querySelectorAll('.play-pause-btn');
+        playPauseButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const songId = this.id.replace('playPause', '');
+                const audioElement = document.getElementById(`audio${songId}`);
+                const isPlaying = !audioElement.paused;
 
-    <script>
-        window.onload = function() {
-            const audioElement = document.querySelector('audio');
-            const canvas = document.getElementById('frequencyVisualizer');
-            const ctx = canvas.getContext('2d');
-
-            // Set up the audio context and analyser
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            const analyser = audioContext.createAnalyser();
-            const source = audioContext.createMediaElementSource(audioElement);
-
-            // Connect the source to the analyser and to the output
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-
-            analyser.fftSize = 256; // Number of frequency bins
-            const bufferLength = analyser.frequencyBinCount; // Number of data points
-
-            // Create an array to store frequency data
-            const dataArray = new Uint8Array(bufferLength);
-
-            // Function to animate the visualizer
-            function draw() {
-                // Get the frequency data from the analyser
-                analyser.getByteFrequencyData(dataArray);
-
-                // Clear the canvas
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-                // Calculate the width of each bar
-                const barWidth = canvas.width / bufferLength;
-
-                // Loop through the frequency data and draw each bar
-                for (let i = 0; i < bufferLength; i++) {
-                    const barHeight = dataArray[i];
-                    const red = barHeight + 100 * (i / bufferLength);
-                    const green = 250 * (i / bufferLength);
-                    const blue = 50;
-
-                    ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
-                    ctx.fillRect(i * barWidth, canvas.height - barHeight, barWidth, barHeight);
+                if (isPlaying) {
+                    audioElement.pause();
+                    this.innerHTML = '▶️'; // Tampilkan ikon putar
+                } else {
+                    audioElement.play();
+                    this.innerHTML = '❚❚'; // Tampilkan ikon jeda
                 }
+            });
+        });
+    };
 
-                // Call the draw function recursively to animate
-                requestAnimationFrame(draw);
-            }
+    document.getElementById('like-btn').addEventListener('click', function() {
+        const likeBtn = this;
+        const likeCount = document.getElementById('like-count');
+        const albumId = <?php echo $album_id; ?>;
 
-            // Start the animation once the audio is ready
-            audioElement.onplay = function() {
-                audioContext.resume().then(() => {
-                    draw();
-                });
-            };
-        };
-    </script>
+        fetch('../api/like.php?album_id=' + albumId)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    let count = parseInt(likeCount.innerText);
+                    likeCount.innerText = count + 1;
+                    likeBtn.disabled = true; // Disable tombol setelah memberi like
+                }
+            });
+    });
+</script>
 </body>
 </html>
